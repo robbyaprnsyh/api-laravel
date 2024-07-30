@@ -3,47 +3,48 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Liga;
+use App\Models\Fan;
 use Illuminate\Http\Request;
 use Validator;
 
-class LigaController extends Controller
+class FanController extends Controller
 {
     public function index()
     {
-        $liga = Liga::latest()->get();
-        $res = [
+        $fans = Fan::with('klub')->latest()->get();
+        return response()->json([
             'success' => true,
-            'message' => 'Daftar Liga Sepak Bola',
-            'data' => $liga,
-        ];
-        return response()->json($res, 200);
+            'message' => 'Daftar fans',
+            'data' => $fans,
+        ], 200);
     }
 
     public function store(Request $request)
     {
         $validate = Validator::make($request->all(), [
-            'nama_liga' => 'required|unique:ligas',
-            'negara' => 'required',
+            'nama_fan' => 'required',
+            'klub' => 'required|array',
         ]);
 
         if ($validate->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validasi Gagal',
+                'message' => 'Validasi gagal',
                 'errors' => $validate->errors(),
             ], 422);
         }
 
         try {
-            $liga = new Liga;
-            $liga->nama_liga = $request->nama_liga;
-            $liga->negara = $request->negara;
-            $liga->save();
+            $fan = new Fan();
+            $fan->nama_fan = $request->nama_fan;
+            $fan->save();
+            // Lampirkan banyak klub
+            $fan->klub()->attach($request->klub);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Data liga berhasil di buat',
-                'data' => $liga,
+                'message' => 'Daftar fans',
+                'data' => $fan,
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -57,46 +58,49 @@ class LigaController extends Controller
     public function show($id)
     {
         try {
-            $liga = Liga::findOrFail($id);
+            $fan = Fan::findOrFail($id);
             return response()->json([
                 'success' => true,
-                'message' => 'Detail Liga',
-                'data' => $liga,
-            ], 200);
+                'message' => 'Detail fan',
+                'data' => $fan,
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ada',
+                'message' => 'Data Tidak Ada',
                 'errors' => $e->getMessage(),
             ], 404);
         }
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, string $id)
     {
         $validate = Validator::make($request->all(), [
-            'nama_liga' => 'required',
-            'negara' => 'required',
+            'nama_fan' => 'required',
+            'klub' => 'required|array',
         ]);
 
         if ($validate->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validasi Gagal',
+                'message' => 'Validasi gagal',
                 'errors' => $validate->errors(),
             ], 422);
         }
 
         try {
-            $liga = Liga::findOrFail($id);
-            $liga->nama_liga = $request->nama_liga;
-            $liga->negara = $request->negara;
-            $liga->save();
+            $fan = Fan::findOrFail($id);
+            $fan->nama_fan = $request->nama_fan;
+            $fan->save();
+            // Lampirkan banyak klub
+            $fan->klub()->sync($request->klub);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Data liga berhasil di ubah',
-                'data' => $liga,
-            ], 201);
+                'message' => 'Data berhasil di ubah',
+                'data' => $fan,
+            ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -106,21 +110,25 @@ class LigaController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy(string $id)
     {
         try {
-            $liga = Liga::findOrFail($id);
-            $liga->delete();
+            $fan = Fan::findOrFail($id);
+            $fan->klub()->detach();
+            $fan->delete();
+            // hapus banyak klub
             return response()->json([
                 'success' => true,
-                'message' => 'Data ' . $liga->nama_liga . ' Berhasil Di Hapus',
+                'message' => 'Data berhasil di hapus',
+                'data' => $fan,
             ], 200);
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data tidak ada',
+                'message' => 'Terjadi Kesalahan',
                 'errors' => $e->getMessage(),
-            ], 404);
+            ], 500);
         }
     }
 }
