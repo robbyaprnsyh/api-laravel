@@ -141,7 +141,9 @@ class PemainController extends Controller
     {
         try {
             $pemain = Pemain::findOrFail($id);
-            Storage::delete($pemain->foto); //menghapus gambar lama / foto lama
+            //menghapus gambar lama / foto lama
+
+            Storage::delete($pemain->foto);
             $pemain->delete();
             return response()->json([
                 'success' => true,
