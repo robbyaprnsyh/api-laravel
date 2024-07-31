@@ -41,7 +41,7 @@ class PemainController extends Controller
         }
 
         try {
-            $path = $request->file('foto')->store('public/pemain'); //menyimpan gambar
+            $path = $request->file('foto')->store('public/foto'); //menyimpan gambar
             $pemain = new Pemain;
             $pemain->nama_pemain = $request->nama_pemain;
             $pemain->tgl_lahir = $request->tgl_lahir;
@@ -88,7 +88,7 @@ class PemainController extends Controller
     public function update(Request $request, $id)
     {
         $validate = Validator::make($request->all(), [
-            'nama_pemain' => 'required|unique:pemains',
+            'nama_pemain' => 'required',
             'tgl_lahir' => 'required',
             'harga_pasar' => 'required',
             'posisi' => 'required|in:gk,df,mf,fw',
@@ -106,8 +106,13 @@ class PemainController extends Controller
         }
 
         try {
-            $path = $request->file('foto')->store('public/pemain'); //menyimpan gambar
             $pemain = Pemain::findOrFail($id);
+            if ($request->hasFile('foto')) {
+                // delete foto / foto lama
+                Storage::delete($pemain->foto);
+                $path = $request->file('foto')->store('public/foto');
+                $pemain->foto = $path;
+            }
             $pemain->nama_pemain = $request->nama_pemain;
             $pemain->tgl_lahir = $request->tgl_lahir;
             $pemain->harga_pasar = $request->harga_pasar;
@@ -119,7 +124,7 @@ class PemainController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Data Berhasil Dibuat',
+                'message' => 'Data Berhasil di ubah',
                 'data' => $pemain,
             ], 201);
         } catch (\Exception $e) {
